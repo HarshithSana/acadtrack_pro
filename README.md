@@ -1,4 +1,4 @@
-# AcadTrack Pro
+# 🎓 AcadTrack Pro
 
 ![Python](https://img.shields.io/badge/Python-3.10+-blue)
 ![Flask](https://img.shields.io/badge/Flask-WebApp-green)
@@ -6,116 +6,138 @@
 ![ML](https://img.shields.io/badge/MachineLearning-ScikitLearn-red)
 ![License](https://img.shields.io/badge/License-Academic-lightgrey)
 
-> **Academic Performance Tracking & Grade Prediction System for Engineering Colleges**
+> 📊 **Academic Performance Tracking & Grade Prediction System for Engineering Colleges**
 
-AcadTrack Pro is a full-stack web application designed for **NNRG (Nalla Narasimha Reddy Group of Institutions)** under the **R22 Regulations curriculum**.
+AcadTrack Pro is a **full-stack academic analytics platform** built using **Python, Flask, MySQL, and Machine Learning**.
 
-The platform provides students with a **personalized academic dashboard** while giving administrators **powerful tools to manage academic records, monitor performance, track backlogs, and predict future grades using machine learning models.**
+The system provides students with a **personalized academic dashboard** while giving administrators powerful tools to **monitor performance, manage academic records, track backlogs, and predict future grades using machine learning models**.
 
 ---
 
-# Features
+# ✨ Features
 
-## Student Portal
+## 🎓 Student Portal
 
-### Academic Dashboard
+### 📊 Academic Dashboard
 
-* CGPA display with department ranking
+* CGPA display with **department ranking**
 * Semester-wise **SGPA trend charts**
-* Subject-wise **marks chart with semester tabs**
-* **Credits completion progress bar**
+* Subject-wise **marks visualization**
+* **Credit completion progress bar**
 
-### Backlog Tracking
+---
 
-* Full attempt history for failed subjects
-* Visual backlog chains
-  Example:
+### 🔗 Backlog Tracking
+
+Students can track the complete history of failed subjects.
+
+Example backlog chain:
 
 ```
 Sem 3: F → Sem 4: F → Sem 5: C
 ```
 
-### Semester Reports
+The system records:
 
-Detailed grade sheet per semester including:
-
-* Subject marks
-* Credits
-* Grade points
-* SGPA calculation
-
-### ML Prediction
-
-Predicts **next semester SGPA** using **Ridge Regression** trained on historical student performance.
-
-### Risk Assessment
-
-Automated performance analysis:
-
-| Risk Level | Meaning                        |
-| ---------- | ------------------------------ |
-| LOW        | Stable academic performance    |
-| MEDIUM     | Slight decline detected        |
-| HIGH       | At risk of academic difficulty |
-
-Trend indicators:
-
-* Improving
-* Declining
-* Stable
-* At Risk
+* number of attempts
+* clearance semester
+* backlog trends
 
 ---
 
-## Admin Portal
+### 📄 Semester Reports
 
-### Overview Dashboard
+Detailed grade sheet per semester including:
+
+* subject marks
+* credits
+* grade points
+* SGPA calculation
+* grade distribution charts
+
+---
+
+### 🚨 Risk Assessment
+
+Automatic academic risk classification.
+
+| Risk Level | Meaning            |
+| ---------- | ------------------ |
+| 🟢 LOW     | Stable performance |
+| 🟡 MEDIUM  | Slight decline     |
+| 🔴 HIGH    | Academic risk      |
+
+Trend indicators:
+
+* 📈 Improving
+* 📉 Declining
+* ➖ Stable
+
+---
+
+# 🛠 Admin Portal
+
+### 📊 Overview Dashboard
 
 Admin overview showing:
 
-* Total students
-* Active backlogs
-* Backlog clearance rate
-* Branch-wise backlog distribution
+* 👨‍🎓 total students
+* ⚠️ active backlogs
+* ✅ backlog clearance rate
+* 🏫 branch-wise backlog distribution
 
-### Student Management
+---
+
+### 👥 Student Management
 
 Admins can:
 
-* Add new students
-* Delete students
-* Search by name or roll number
-* Filter students by branch
+* add students
+* delete students
+* search by roll number
+* filter by branch
 
-### Grade Management
+---
 
-* Add grades
-* Delete grades
-* Filter by branch and semester
-* Automatic backlog tracking when **F grade** is entered
+### 📝 Grade Management
 
-### Department Rankings
+Features include:
+
+* add grades
+* delete grades
+* branch filtering
+* semester filtering
+* automatic backlog detection
+
+---
+
+### 🏆 Department Rankings
 
 Displays CGPA rankings including:
 
-* Rank
-* Student CGPA
-* Backlog count
-* Performance classification
+* student rank
+* CGPA
+* backlog count
+* performance classification
 
-| CGPA Range | Status       |
-| ---------- | ------------ |
-| ≥ 8.0      | Distinction  |
-| 7.0 – 7.99 | First Class  |
-| 6.0 – 6.99 | Second Class |
+| CGPA Range | Status          |
+| ---------- | --------------- |
+| ≥ 8.0      | 🏅 Distinction  |
+| 7.0 – 7.99 | 🥇 First Class  |
+| 6.0 – 6.99 | 🥈 Second Class |
 
-### Backlog Tracker
+---
 
-Shows complete backlog histories for all branches including full attempt chains.
+### 🔮 Grade Predictor (Machine Learning)
 
-### Grade Predictor
+Admin tool that predicts **future subject grades** using prerequisite subject performance.
 
-Predicts a student's **expected grade in a subject** based on their performance in prerequisite subjects.
+The model considers:
+
+* prerequisite grades
+* student CGPA
+* subject difficulty
+* statistical academic trends
 
 Supports **batch prediction for entire branches**.
 
@@ -139,42 +161,40 @@ Supports **batch prediction for entire branches**.
 | ----------------------------- | ------------------------------------ |
 | ![](screenshots/backlogs.png) | ![](screenshots/student_profile.png) |
 
+---
+
+# ⚙️ Tech Stack
+
+| Layer            | Technology              |
+| ---------------- | ----------------------- |
+| Backend          | Python, Flask           |
+| Database         | MySQL                   |
+| Machine Learning | scikit-learn            |
+| Frontend         | HTML5, CSS3, JavaScript |
+| Charts           | Chart.js                |
+| Model Storage    | joblib (.pkl files)     |
 
 ---
 
-# Tech Stack
-
-| Layer            | Technology                                |
-| ---------------- | ----------------------------------------- |
-| Backend          | Python 3 + Flask                          |
-| Database         | MySQL 8.x                                 |
-| Machine Learning | scikit-learn                              |
-| Frontend         | HTML5, CSS3, Vanilla JS                   |
-| Charts           | Chart.js                                  |
-| Model Storage    | joblib (.pkl files)                       |
-| Database Access  | Raw SQL via custom `execute_query` helper |
-
----
-
-# System Architecture
+# 🏗 System Architecture
 
 ```
-Students/Admin
-      │
-      ▼
+Students / Admin
+       │
+       ▼
 Flask Web Application
-      │
-      ▼
+       │
+       ▼
 MySQL Database
-      │
-      ▼
-Machine Learning Prediction Engine
+       │
+       ▼
+Machine Learning Engine
 (Ridge Regression + Random Forest)
 ```
 
 ---
 
-# Project Structure
+# 📁 Project Structure
 
 ```
 acadtrack_pro/
@@ -182,6 +202,7 @@ acadtrack_pro/
 ├── app.py
 ├── db.py
 ├── train_model.py
+├── requirements.txt
 │
 ├── ml/
 │   ├── predictor.py
@@ -189,16 +210,13 @@ acadtrack_pro/
 │   └── prereq_model.pkl
 │
 ├── static/
-│   └── css/
-│       └── style.css
+│   └── css/style.css
 │
 ├── templates/
 │   ├── login.html
 │   ├── dashboard.html
 │   ├── semester_report.html
-│   │
 │   └── admin/
-│       ├── admin_login.html
 │       ├── admin_panel.html
 │       ├── manage_students.html
 │       ├── manage_grades.html
@@ -206,6 +224,19 @@ acadtrack_pro/
 │       ├── backlogs.html
 │       ├── predict.html
 │       └── student_profile.html
+│
+├── screenshots/
+│   ├── login.png
+│   ├── dashboard.png
+│   ├── semester_report.png
+│   ├── backlog_chain.png
+│   ├── admin_dashboard.png
+│   ├── grade_prediction.png
+│   ├── manage_students.png
+│   ├── manage_grades.png
+│   ├── rankings.png
+│   ├── backlogs.png
+│   └── student_profile.png
 │
 └── sql/
     ├── 01_schema.sql
@@ -215,102 +246,68 @@ acadtrack_pro/
 
 ---
 
-# Database Schema
+# 🗄 Database Schema
 
 The system uses **12 tables**.
 
-| Table                    | Description                          |
-| ------------------------ | ------------------------------------ |
-| students                 | Core student records                 |
-| semesters                | Reference table for semester numbers |
-| gradepoints              | Grade to point mapping               |
-| subjects                 | Subject catalog                      |
-| branch_subjects          | Branch-semester subject mapping      |
-| subject_prerequisites    | ML prerequisite relationships        |
-| grades                   | All student grades                   |
-| backlog_attempts         | History of failed subject attempts   |
-| student_semester_status  | Semester completion data             |
-| predictions              | Stored ML predictions                |
-| prediction_training_data | Training dataset                     |
-| admins                   | Admin credentials                    |
+| Table                    | Description                |
+| ------------------------ | -------------------------- |
+| students                 | student records            |
+| semesters                | semester reference         |
+| gradepoints              | grade-point mapping        |
+| subjects                 | subject catalog            |
+| branch_subjects          | branch subject mapping     |
+| subject_prerequisites    | prerequisite relationships |
+| grades                   | student grades             |
+| backlog_attempts         | backlog history            |
+| student_semester_status  | semester status            |
+| predictions              | stored ML predictions      |
+| prediction_training_data | ML training dataset        |
+| admins                   | admin accounts             |
 
 ---
 
-# Database Views
+# 🤖 Machine Learning Models
 
-| View              | Description                     |
-| ----------------- | ------------------------------- |
-| v_student_cgpa    | Precomputed CGPA per student    |
-| v_backlog_summary | Active uncleared backlogs       |
-| v_year_semester   | Year-semester label (e.g., 3-2) |
+## SGPA Predictor
 
----
+Model: **Ridge Regression**
 
-# Curriculum Coverage
+Predicts **next semester SGPA** using:
 
-Built for **NNRG R22 Regulations** across four branches.
-
-| Branch                         | Code | Total Credits |
-| ------------------------------ | ---- | ------------- |
-| Computer Science & Engineering | 05   | 160           |
-| Information Technology         | 12   | 160           |
-| CS with AI & ML                | 66   | 160           |
-| CS with Data Science           | 67   | 160           |
-
-Each semester contains **20 credits**.
+* last SGPA
+* average SGPA
+* trend direction
+* standard deviation
+* min / max SGPA
+* number of semesters completed
 
 ---
 
-# Machine Learning Models
+## Grade Predictor
 
-## SGPA Predictor (Ridge Regression)
+Model: **Random Forest**
 
-Predicts the **next semester SGPA**.
+Predicts **future subject grades** using:
 
-Features used:
-
-* Last SGPA
-* Average SGPA
-* Trend direction
-* Standard deviation
-* Minimum SGPA
-* Maximum SGPA
-* Number of semesters completed
+* prerequisite grades
+* student CGPA
+* subject difficulty
+* statistical features
 
 ---
 
-## Grade Predictor (Random Forest)
-
-Predicts a **future subject grade** using prerequisite performance.
-
-Features used:
-
-* Weighted average of prerequisite grades
-* Best prerequisite grade
-* Worst prerequisite grade
-* Standard deviation of prerequisite grades
-* Subject difficulty
-* Student CGPA
-* Number of prerequisites
-
-Training dataset:
-
-* **15,000 synthetic samples**
-* Real student data extracted from database
-
----
-
-# Installation
+# 🚀 Installation
 
 ## Prerequisites
 
 * Python 3.10+
-* MySQL 8.x
+* MySQL 8+
 * pip
 
 ---
 
-## 1 Clone Repository
+## Clone Repository
 
 ```
 git clone https://github.com/yourusername/acadtrack_pro.git
@@ -319,41 +316,19 @@ cd acadtrack_pro
 
 ---
 
-## 2 Create Virtual Environment
+## Install Dependencies
 
 ```
-python -m venv venv
-```
-
-Activate environment:
-
-Windows
-
-```
-venv\Scripts\activate
-```
-
-Linux / Mac
-
-```
-source venv/bin/activate
+pip install -r requirements.txt
 ```
 
 ---
 
-## 3 Install Dependencies
+## Configure Database
+
+Edit `db.py`
 
 ```
-pip install flask pymysql scikit-learn joblib numpy
-```
-
----
-
-## 4 Configure Database
-
-Edit **db.py**
-
-```python
 DB_CONFIG = {
     'host': 'localhost',
     'user': 'root',
@@ -364,9 +339,7 @@ DB_CONFIG = {
 
 ---
 
-## 5 Setup Database
-
-Run SQL scripts in order.
+## Setup Database
 
 ```
 mysql -u root -p < sql/01_schema.sql
@@ -376,7 +349,7 @@ mysql -u root -p < sql/03_data.sql
 
 ---
 
-## 6 Train Machine Learning Models
+## Train Machine Learning Models
 
 ```
 python train_model.py
@@ -387,12 +360,12 @@ Expected output:
 ```
 ✓ cgpa_model.pkl saved
 ✓ prereq_model.pkl saved
-Training complete. Models ready.
+Training complete
 ```
 
 ---
 
-## 7 Run Application
+## Run Application
 
 ```
 python app.py
@@ -406,9 +379,9 @@ http://127.0.0.1:5000
 
 ---
 
-# Default Credentials
+# 🔑 Default Credentials
 
-## Admin
+### Admin
 
 | Username | Password |
 | -------- | -------- |
@@ -416,107 +389,52 @@ http://127.0.0.1:5000
 
 ---
 
-## Students
+### Students
 
-Each student's password is their **roll number**.
-
-Examples:
-
-| Roll Number | Branch | Batch |
-| ----------- | ------ | ----- |
-| 217Z1A0501  | CSE    | 2021  |
-| 227Z1A6601  | CSM    | 2022  |
-| 237Z1A6701  | CSD    | 2023  |
-| 247Z1A1201  | IT     | 2024  |
-
----
-
-# Roll Number Format
-
-```
-YY 7Z1A BB NNN
-```
-
-| Section | Meaning        |
-| ------- | -------------- |
-| YY      | Joining year   |
-| BB      | Branch code    |
-| NNN     | Student serial |
+Student password = **roll number**
 
 Example:
 
-```
-237Z1A0523
-```
-
-CSE student, joined **2023**, serial **23**.
-
----
-
-# Seed Dataset
-
-The system includes **realistic simulated academic data**.
-
-| Metric                 | Value     |
-| ---------------------- | --------- |
-| Total students         | 508       |
-| Batches                | 2021-2024 |
-| Total grade records    | ~23,700   |
-| Students with backlogs | ~81       |
-| Backlog chains         | ~88       |
-| Backlog clearance rate | ~72%      |
-
-Grade distribution:
-
-| Grade | Percentage |
-| ----- | ---------- |
-| O     | 12%        |
-| A     | 20%        |
-| B     | 24%        |
-| C     | 23%        |
-| D     | 13%        |
-| F     | 8%         |
+| Roll Number | Branch |
+| ----------- | ------ |
+| 217Z1A0501  | CSE    |
+| 227Z1A6601  | CSM    |
+| 237Z1A6701  | CSD    |
+| 247Z1A1201  | IT     |
 
 ---
 
-# Retraining Models
+# 📊 Dataset Summary
 
-After inserting new grades or students:
-
-```
-python train_model.py
-```
-
-The optimized training script uses **bulk SQL queries** to retrain models in seconds regardless of dataset size.
-
----
-
-# Future Improvements
-
-* Deep learning based grade prediction
-* Attendance analytics integration
-* Notification system for backlog risk
-* Mobile responsive UI
-* Role-based authentication system
+| Metric                    | Value     |
+| ------------------------- | --------- |
+| 👨‍🎓 Students            | 508       |
+| 📚 Batches                | 2021–2024 |
+| 📝 Grade Records          | ~23,700   |
+| ⚠️ Students with Backlogs | ~81       |
+| 🔗 Backlog Chains         | ~88       |
+| ✅ Clearance Rate          | ~72%      |
 
 ---
 
-# Contributing
+# 🔮 Future Improvements
 
-Pull requests are welcome. For major changes, please open an issue first.
+* 📲 Mobile responsive interface
+* 🔔 Academic risk notifications
+* 📊 Attendance analytics integration
+* 🧠 Advanced deep learning prediction models
+* 🔐 Role-based authentication
 
 ---
 
-# Author
+# 👨‍💻 Author
 
 **Harshith Sana**
 
-Developed for academic purposes at
-**NNRG – Nalla Narasimha Reddy Group of Institutions**
-under **R22 Regulations**.
+Academic Software Project
 
 ---
 
-# License
+# 📄 License
 
 This project is intended for **academic and educational purposes**.
