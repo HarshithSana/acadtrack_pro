@@ -121,30 +121,24 @@ Supports **batch prediction for entire branches**.
 
 ---
 
-# Screenshots
+# 📸 Screenshots
 
-*(Add screenshots after deploying the project)*
+| 🔐 Login                   | 📊 Dashboard                   | 📄 Semester Report                   |
+| -------------------------- | ------------------------------ | ------------------------------------ |
+| ![](screenshots/login.png) | ![](screenshots/dashboard.png) | ![](screenshots/semester_report.png) |
 
-```
-docs/
-dashboard.png
-semester_report.png
-admin_panel.png
-```
+| 🔗 Backlog Chain                   | 🛠 Admin Dashboard                   | 🔮 Grade Prediction                   |
+| ---------------------------------- | ------------------------------------ | ------------------------------------- |
+| ![](screenshots/backlog_chain.png) | ![](screenshots/admin_dashboard.png) | ![](screenshots/grade_prediction.png) |
 
-Example section:
+| 👥 Student Management                | 📝 Grade Management                | 🏆 Rankings                   |
+| ------------------------------------ | ---------------------------------- | ----------------------------- |
+| ![](screenshots/manage_students.png) | ![](screenshots/manage_grades.png) | ![](screenshots/rankings.png) |
 
-## Student Dashboard
+| ⚠️ Admin Backlog Tracker      | 👤 Student Profile                   |
+| ----------------------------- | ------------------------------------ |
+| ![](screenshots/backlogs.png) | ![](screenshots/student_profile.png) |
 
-![Dashboard](docs/dashboard.png)
-
-## Semester Report
-
-![Semester Report](docs/semester_report.png)
-
-## Admin Panel
-
-![Admin Panel](docs/admin_panel.png)
 
 ---
 
