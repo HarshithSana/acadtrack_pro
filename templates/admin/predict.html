@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Grade Predictor — AcadTrack</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="admin-wrap">
+  {% set active_page = 'predict' %}
+  {% include 'admin/_base.html' %}
+
+  <main class="admin-main">
+    <div class="breadcrumb fade-up">
+      <a href="{{ url_for('admin_panel') }}">Admin</a>
+      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-current">Grade Predictor</span>
+    </div>
+
+    <div style="margin-bottom:1.5rem;" class="fade-up">
+      <div style="font-family:'Familjen Grotesk',sans-serif;font-size:1.4rem;font-weight:700;">Grade Predictor</div>
+      <div style="font-size:0.7rem;color:var(--text3);margin-top:0.2rem;">
+        Predict a student's expected grade using prerequisite subject performance
+      </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}<div class="alert alert-{{ cat }}">{{ msg }}</div>{% endfor %}
+    {% endwith %}
+
+    <div class="grid-2 fade-up fade-up-1">
+
+      <!-- INPUT FORM -->
+      <div class="card">
+        <div class="card-head">Search &amp; Predict</div>
+        <form method="POST" action="{{ url_for('admin_predict') }}">
+
+          <div class="form-group">
+            <label>Student Roll Number</label>
+            <input type="text" name="student_id" placeholder="e.g. 237Z1A0501"
+                   value="{{ selected_student.student_id if selected_student else '' }}"
+                   list="students-list" autocomplete="off" required>
+            <datalist id="students-list">
+              {% for s in all_students %}
+              <option value="{{ s.student_id }}">{{ s.name }} ({{ s.department }})</option>
+              {% endfor %}
+            </datalist>
+            {% if selected_student %}
+            <div style="margin-top:0.4rem;font-size:0.7rem;color:var(--text3);">
+              {{ selected_student.name }} · {{ selected_student.department }}
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="form-group">
+            <label>Target Subject to Predict</label>
+            <select name="subject_id" required>
+              <option value="">— Select subject —</option>
+              {% for s in predictable_subjects %}
+              <option value="{{ s.subject_id }}"
+                {% if selected_subject and selected_subject.subject_id == s.subject_id %}selected{% endif %}>
+                Sem {{ s.semester }} · {{ s.subject_name }} ({{ s.difficulty }})
+              </option>
+              {% endfor %}
+            </select>
+            <div style="margin-top:0.35rem;font-size:0.65rem;color:var(--text3);">
+              Only subjects with defined prerequisites are listed
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-full">Predict Grade</button>
+        </form>
+
+        <!-- BATCH PREDICT -->
+        <div style="margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border);">
+          <div style="font-size:0.68rem;color:var(--text3);margin-bottom:0.75rem;letter-spacing:0.05em;">
+            BATCH PREDICTION — Run for entire branch
+          </div>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+            <select id="batchDept" class="btn btn-ghost" style="padding:0.4rem 0.6rem;font-size:0.72rem;">
+              <option value="">Branch</option>
+              <option>CSE</option><option>IT</option><option>CSM</option><option>CSD</option>
+            </select>
+            <select id="batchSubject" class="btn btn-ghost" style="padding:0.4rem 0.6rem;font-size:0.72rem;">
+              <option value="">Subject</option>
+              {% for s in predictable_subjects %}
+              <option value="{{ s.subject_id }}">{{ s.subject_name }}</option>
+              {% endfor %}
+            </select>
+            <button onclick="runBatch()" class="btn btn-ghost">▸ Run Batch</button>
+          </div>
+          <div id="batchResults" style="margin-top:1rem;display:none;">
+            <div class="table-wrap">
+              <table id="batchTable">
+                <thead><tr><th>Student</th><th>ID</th><th>Predicted</th><th>Confidence</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESULT PANEL -->
+      <div>
+        {% if prediction_result and selected_student and selected_subject %}
+        <div class="card" style="margin-bottom:1.25rem;">
+          <div class="card-head">
+            Prediction Result
+            <span class="diff-{{ selected_subject.difficulty }}">{{ selected_subject.difficulty }}</span>
+          </div>
+
+          <div style="text-align:center;padding:1.5rem 0;">
+            <div style="font-size:0.68rem;color:var(--text3);margin-bottom:0.5rem;">Expected Grade</div>
+            <div class="predicted-grade-badge
+              {% if prediction_result.predicted_grade in ['O','A'] %}cyan
+              {% elif prediction_result.predicted_grade in ['B','C'] %}indigo
+              {% else %}rose{% endif %}"
+              style="color:{% if prediction_result.predicted_grade in ['O','A'] %}var(--cyan){% elif prediction_result.predicted_grade in ['B','C'] %}var(--indigo){% else %}var(--rose){% endif %};">
+              {{ prediction_result.predicted_grade }}
+            </div>
+            <div style="font-size:0.7rem;color:var(--text3);margin-top:0.5rem;">
+              {{ selected_subject.subject_name }}
+            </div>
+          </div>
+
+          <!-- Confidence Bar -->
+          <div class="confidence-bar-wrap">
+            <div style="display:flex;justify-content:space-between;font-size:0.68rem;color:var(--text3);margin-bottom:0.3rem;">
+              <span>Confidence</span>
+              <span style="color:var(--indigo);">{{ prediction_result.confidence }}%</span>
+            </div>
+            <div class="confidence-track">
+              <div class="confidence-fill" style="width:{{ prediction_result.confidence }}%"></div>
+            </div>
+          </div>
+
+          <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border);">
+            <div style="font-size:0.68rem;color:var(--text3);margin-bottom:0.6rem;letter-spacing:0.05em;">
+              PREREQUISITE GRADES USED
+            </div>
+            {% for pg in prereq_grades %}
+            <div style="display:flex;align-items:center;justify-content:space-between;
+                        padding:0.5rem 0.75rem;background:var(--surface2);border-radius:7px;
+                        margin-bottom:0.4rem;font-size:0.75rem;">
+              <span style="color:var(--text2);">{{ pg.subject_name }}</span>
+              <div style="display:flex;align-items:center;gap:0.6rem;">
+                <span style="font-size:0.65rem;color:var(--text3);">weight {{ pg.weight }}</span>
+                {% if pg.grade == 'N/A' %}
+                <span style="color:var(--text3);">N/A</span>
+                {% else %}
+                <span class="badge badge-{{ pg.grade[0] }}">{{ pg.grade }}</span>
+                {% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          <div style="margin-top:1rem;font-size:0.68rem;color:var(--text3);text-align:center;">
+            Prediction saved · Unified ML Model · Ridge Regression
+          </div>
+        </div>
+
+        {% elif selected_student %}
+        <div class="card">
+          <div class="card-head">No Result</div>
+          <div style="padding:2rem;text-align:center;font-size:0.78rem;color:var(--text3);">
+            Could not predict — no prerequisite grades found for this student in the selected subject.
+          </div>
+        </div>
+        {% else %}
+        <div class="card">
+          <div class="card-head">How it works</div>
+          <div style="padding:0.5rem 0;font-size:0.78rem;color:var(--text2);line-height:1.9;">
+            <div style="margin-bottom:0.75rem;padding:0.75rem;background:var(--surface2);border-radius:8px;border:1px solid var(--border);">
+              <div style="color:var(--cyan);font-size:0.65rem;font-weight:600;margin-bottom:0.3rem;">STEP 1</div>
+              Enter a student's roll number and select a target subject
+            </div>
+            <div style="margin-bottom:0.75rem;padding:0.75rem;background:var(--surface2);border-radius:8px;border:1px solid var(--border);">
+              <div style="color:var(--indigo);font-size:0.65rem;font-weight:600;margin-bottom:0.3rem;">STEP 2</div>
+              The system fetches the student's grades in prerequisite subjects
+            </div>
+            <div style="padding:0.75rem;background:var(--surface2);border-radius:8px;border:1px solid var(--border);">
+              <div style="color:var(--emerald);font-size:0.65rem;font-weight:600;margin-bottom:0.3rem;">STEP 3</div>
+              A trained ML model predicts the expected grade with confidence score
+            </div>
+          </div>
+
+          {% if predictable_subjects %}
+          <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border);">
+            <div style="font-size:0.65rem;color:var(--text3);margin-bottom:0.6rem;letter-spacing:0.05em;">PREDICTABLE SUBJECTS</div>
+            {% for s in predictable_subjects %}
+            <div style="display:flex;justify-content:space-between;align-items:center;
+                        padding:0.45rem 0.75rem;background:var(--surface2);border-radius:6px;
+                        margin-bottom:0.3rem;font-size:0.72rem;">
+              <span>{{ s.subject_name }}</span>
+              <div style="display:flex;gap:0.4rem;align-items:center;">
+                <span style="color:var(--text3);font-size:0.65rem;">Sem {{ s.semester }}</span>
+                <span class="diff-{{ s.difficulty }}">{{ s.difficulty }}</span>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+
+    </div>
+
+  </main>
+</div>
+{% include 'admin/_toast.html' %}
+
+<script>
+async function runBatch() {
+  const dept      = document.getElementById('batchDept').value;
+  const subjectId = document.getElementById('batchSubject').value;
+  if (!dept || !subjectId) { showToast('Select a branch and subject first.', 'warning'); return; }
+
+  showToast('Running batch prediction...', 'warning');
+
+  const fd = new FormData();
+  fd.append('department', dept);
+  fd.append('subject_id', subjectId);
+
+  try {
+    const res  = await fetch('{{ url_for("batch_predict") }}', { method:'POST', body:fd });
+    const data = await res.json();
+    if (data.error) { showToast(data.error, 'error'); return; }
+
+    const tbody = document.querySelector('#batchTable tbody');
+    tbody.innerHTML = '';
+    data.results.forEach(r => {
+      const gradeColor = ['O','A'].includes(r.predicted_grade) ? 'var(--cyan)'
+                       : ['B','C'].includes(r.predicted_grade) ? 'var(--indigo)' : 'var(--rose)';
+      tbody.innerHTML += `
+        <tr>
+          <td>${r.name}</td>
+          <td style="color:var(--text3)">${r.student_id}</td>
+          <td><span style="color:${gradeColor};font-weight:700;">${r.predicted_grade}</span></td>
+          <td>${r.confidence > 0 ? r.confidence.toFixed(1)+'%' : '—'}</td>
+        </tr>`;
+    });
+
+    document.getElementById('batchResults').style.display = 'block';
+    showToast(`Batch complete — ${data.results.length} students predicted.`, 'success');
+  } catch(e) {
+    showToast('Batch prediction failed.', 'error');
+  }
+}
+</script>
+</body>
+</html>

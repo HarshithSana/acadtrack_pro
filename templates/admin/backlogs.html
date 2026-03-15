@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Backlog Tracker — AcadTrack</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="admin-wrap">
+  {% set active_page = 'backlogs' %}
+  {% include 'admin/_base.html' %}
+
+  <main class="admin-main">
+    <div class="breadcrumb fade-up">
+      <a href="{{ url_for('admin_panel') }}">Admin</a>
+      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-current">Backlog Tracker</span>
+    </div>
+
+    <div style="margin-bottom:1.5rem;" class="fade-up">
+      <div style="font-family:'Familjen Grotesk',sans-serif;font-size:1.4rem;font-weight:700;">Backlog Tracker</div>
+      <div style="font-size:0.7rem;color:var(--text3);margin-top:0.2rem;">Full attempt history across all semesters</div>
+    </div>
+
+    <!-- Branch Filter -->
+    <div class="card fade-up fade-up-1" style="margin-bottom:1.25rem;padding:1rem 1.5rem;">
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+        <span style="font-size:0.68rem;color:var(--text3);margin-right:0.25rem;">Filter by Branch:</span>
+        <a href="{{ url_for('admin_backlogs') }}"
+           class="btn btn-sm {% if not dept_filter %}btn-primary{% else %}btn-ghost{% endif %}">All</a>
+        {% for d in departments %}
+        <a href="{{ url_for('admin_backlogs', department=d) }}"
+           class="btn btn-sm {% if dept_filter == d %}btn-primary{% else %}btn-ghost{% endif %}">{{ d }}</a>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% if grouped %}
+    <!-- Stats summary -->
+    {% set total_students_bl = grouped|length %}
+    {% set total_active = namespace(n=0) %}
+    {% set total_cleared = namespace(n=0) %}
+    {% for sid, sdata in grouped.items() %}
+      {% for subid, subdata in sdata.subjects.items() %}
+        {% if subdata.final_status == 'Cleared' %}{% set total_cleared.n = total_cleared.n + 1 %}
+        {% else %}{% set total_active.n = total_active.n + 1 %}{% endif %}
+      {% endfor %}
+    {% endfor %}
+
+    <div class="stats-row fade-up fade-up-2" style="grid-template-columns:repeat(3,1fr);margin-bottom:1.25rem;">
+      <div class="stat">
+        <div class="stat-accent rose"></div>
+        <div class="stat-label">Students with Backlogs</div>
+        <div class="stat-val rose">{{ total_students_bl }}</div>
+        <div class="stat-sub">{% if dept_filter %}in {{ dept_filter }}{% else %}across all branches{% endif %}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-accent amber"></div>
+        <div class="stat-label">Active Backlogs</div>
+        <div class="stat-val amber">{{ total_active.n }}</div>
+        <div class="stat-sub">Still uncleared</div>
+      </div>
+      <div class="stat">
+        <div class="stat-accent emerald"></div>
+        <div class="stat-label">Cleared Backlogs</div>
+        <div class="stat-val emerald">{{ total_cleared.n }}</div>
+        <div class="stat-sub">Successfully resolved</div>
+      </div>
+    </div>
+
+    <!-- Student Backlog Cards -->
+    {% for sid, sdata in grouped.items() %}
+    <div class="card fade-up" style="margin-bottom:1rem;">
+      <div class="card-head">
+        <div style="display:flex;align-items:center;gap:0.75rem;">
+          <div class="avatar" style="width:32px;height:32px;font-size:0.85rem;">{{ sdata.name[0] }}</div>
+          <div>
+            <div style="font-size:0.82rem;font-weight:600;color:var(--text);">{{ sdata.name }}</div>
+            <div style="font-size:0.65rem;color:var(--text3);">{{ sid }}</div>
+          </div>
+          <span class="meta-tag" style="margin-left:0.25rem;">{{ sdata.department }}</span>
+        </div>
+        <a href="{{ url_for('student_profile', sid=sid) }}" class="btn btn-sm btn-profile">View Profile</a>
+      </div>
+
+      {% for subid, subdata in sdata.subjects.items() %}
+      <div class="backlog-history-subject">
+        <div class="backlog-history-head"
+             onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
+          <span style="font-size:0.78rem;">{{ subdata.subject_name }}</span>
+          <span>
+            <span class="{% if subdata.final_status == 'Cleared' %}backlog-status-cleared{% else %}backlog-status-active{% endif %}">
+              {% if subdata.final_status == 'Cleared' %}✓ Cleared{% else %}✕ Active{% endif %}
+            </span>
+            &nbsp;·&nbsp;
+            <span style="color:var(--text3);font-size:0.65rem;">{{ subdata.attempts|length }} attempt(s)</span>
+            &nbsp;▾
+          </span>
+        </div>
+        <div>
+          <div class="attempt-chain">
+            {% for att in subdata.attempts %}
+            {% if not loop.first %}<span class="attempt-arrow">→</span>{% endif %}
+            <span class="attempt-pill {% if att.status == 'Cleared' %}cleared{% else %}fail{% endif %}">
+              Sem {{ att.attempt_semester }}: {{ att.grade }} ({{ att.marks }})
+            </span>
+            {% endfor %}
+          </div>
+          <div style="font-size:0.65rem;color:var(--text3);padding:0 1rem 0.65rem;margin-top:0.2rem;">
+            {% if subdata.final_status == 'Cleared' %}
+              ✓ Cleared after {{ subdata.attempts|length }} attempt(s)
+            {% else %}
+              Still active · {{ subdata.attempts|length }} attempt(s) made
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endfor %}
+
+    {% else %}
+    <div class="card fade-up" style="padding:3rem;text-align:center;color:var(--text3);">
+      No backlog records found{% if dept_filter %} for {{ dept_filter }}{% endif %}.
+    </div>
+    {% endif %}
+
+  </main>
+</div>
+{% include 'admin/_toast.html' %}
+</body>
+</html>
