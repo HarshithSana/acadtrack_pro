@@ -1,26 +1,26 @@
-{# Shared sidebar macro — include in every admin page #}
-{# Usage: {% set active_page = 'overview' %} then {% include 'admin/_base.html' %} #}
-<aside class="sidebar">
-  <a class="sidebar-brand" href="{{ url_for('admin_panel') }}">AcadTrack</a>
-  <div class="sidebar-sub">ADMIN PORTAL</div>
-  <nav>
-    <div class="sidebar-section">Navigation</div>
-    <a href="{{ url_for('admin_panel') }}"
-       class="sidebar-link {% if active_page == 'overview' %}active{% endif %}">▪ Overview</a>
-    <a href="{{ url_for('manage_students') }}"
-       class="sidebar-link {% if active_page == 'students' %}active{% endif %}">▪ Students</a>
-    <a href="{{ url_for('manage_grades') }}"
-       class="sidebar-link {% if active_page == 'grades' %}active{% endif %}">▪ Grades</a>
-    <a href="{{ url_for('admin_rankings') }}"
-       class="sidebar-link {% if active_page == 'rankings' %}active{% endif %}">▪ Rankings</a>
+<nav>
+  <div class="sidebar-section">Navigation</div>
 
-    <div class="sidebar-section">Analytics</div>
-    <a href="{{ url_for('admin_backlogs') }}"
-       class="sidebar-link {% if active_page == 'backlogs' %}active{% endif %}">▪ Backlog Tracker</a>
-    <a href="{{ url_for('admin_predict') }}"
-       class="sidebar-link {% if active_page == 'predict' %}active{% endif %}">▪ Grade Predictor</a>
-  </nav>
-  <div class="sidebar-footer">
-    <a href="{{ url_for('admin_logout') }}" class="sidebar-link" style="color:var(--rose);">▪ Logout</a>
-  </div>
-</aside>
+  <a href="{{ url_for('admin_panel') }}"
+     class="sidebar-link {% if active_page == 'overview' %}active{% endif %}">▪ Overview</a>
+
+  <a href="{{ url_for('manage_students') }}"
+     class="sidebar-link {% if active_page == 'students' %}active{% endif %}">▪ Students</a>
+
+  <a href="{{ url_for('manage_grades') }}"
+     class="sidebar-link {% if active_page == 'grades' %}active{% endif %}">▪ Grades</a>
+
+  <a href="{{ url_for('admin_rankings') }}"
+     class="sidebar-link {% if active_page == 'rankings' %}active{% endif %}">▪ Rankings</a>
+
+  <a href="{{ url_for('upload_page') }}"
+     class="sidebar-link {% if active_page == 'upload' %}active{% endif %}">▪ Upload Data</a>
+
+  <div class="sidebar-section">Analytics</div>
+
+  <a href="{{ url_for('admin_backlogs') }}"
+     class="sidebar-link {% if active_page == 'backlogs' %}active{% endif %}">▪ Backlog Tracker</a>
+
+  <a href="{{ url_for('admin_predict') }}"
+     class="sidebar-link {% if active_page == 'predict' %}active{% endif %}">▪ Grade Predictor</a>
+</nav>

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Upload Data — AcadTrack Admin</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    .upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem}
+    @media(max-width:768px){.upload-grid{grid-template-columns:1fr}}
+    .upload-card{background:var(--surface1);border:1px solid var(--border);border-radius:12px;padding:1.5rem}
+    .upload-card h3{font-size:.95rem;font-weight:700;color:var(--text1);margin-bottom:.25rem}
+    .upload-card p{font-size:.72rem;color:var(--text3);margin-bottom:1rem}
+    .drop-zone{border:2px dashed var(--border);border-radius:10px;padding:2.5rem 1rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface2);position:relative}
+    .drop-zone:hover,.drop-zone.dragover{border-color:var(--cyan);background:rgba(34,211,238,.05)}
+    .drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+    .drop-icon{font-size:2rem;margin-bottom:.5rem}
+    .drop-label{font-size:.78rem;color:var(--text2);margin-bottom:.25rem;font-weight:600}
+    .drop-sub{font-size:.68rem;color:var(--text3)}
+    .drop-filename{margin-top:.75rem;font-size:.72rem;color:var(--cyan);font-weight:600;display:none}
+    .btn-row{display:flex;gap:.5rem;margin-top:1rem;flex-wrap:wrap}
+    .template-link{display:inline-flex;align-items:center;gap:.35rem;font-size:.68rem;color:var(--indigo);text-decoration:none;padding:.25rem .6rem;border:1px solid rgba(129,140,248,.3);border-radius:4px;background:rgba(129,140,248,.08);transition:all .15s}
+    .template-link:hover{background:rgba(129,140,248,.15);border-color:var(--indigo)}
+    .preview-section{margin-top:1.5rem;display:none}
+    .preview-section.visible{display:block}
+    .preview-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem}
+    .preview-title{font-size:.85rem;font-weight:700;color:var(--text1)}
+    .preview-badge{font-size:.68rem;padding:.2rem .6rem;border-radius:4px;font-weight:600}
+    .badge-success{background:rgba(52,211,153,.15);color:var(--emerald);border:1px solid rgba(52,211,153,.3)}
+    .badge-error{background:rgba(251,113,133,.15);color:var(--rose);border:1px solid rgba(251,113,133,.3)}
+    .error-list{background:rgba(251,113,133,.06);border:1px solid rgba(251,113,133,.2);border-radius:8px;padding:1rem;margin-bottom:1rem;max-height:200px;overflow-y:auto}
+    .error-item{font-size:.72rem;color:var(--rose);margin-bottom:.4rem;padding-left:.5rem;border-left:2px solid var(--rose)}
+    .error-item strong{color:var(--text1)}
+    .preview-table-wrap{overflow-x:auto;max-height:320px;overflow-y:auto}
+    .preview-table{width:100%;border-collapse:collapse;font-size:.72rem}
+    .preview-table th{background:var(--surface2);color:var(--text2);font-weight:600;padding:.5rem .75rem;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:0}
+    .preview-table td{padding:.45rem .75rem;border-bottom:1px solid var(--border);color:var(--text1)}
+    .preview-table tr:hover td{background:var(--surface2)}
+    .confirm-bar{display:flex;align-items:center;justify-content:space-between;margin-top:1rem;padding:.75rem 1rem;background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.2);border-radius:8px}
+    .confirm-msg{font-size:.78rem;color:var(--emerald);font-weight:600}
+    .spinner{display:none;width:14px;height:14px;border:2px solid rgba(34,211,238,.3);border-top-color:var(--cyan);border-radius:50%;animation:spin .7s linear infinite;margin-right:.4rem}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .how-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;padding:.5rem 0}
+    .how-item{text-align:center;padding:1rem}
+    .how-icon{font-size:1.5rem;margin-bottom:.5rem}
+    .how-title{font-size:.78rem;font-weight:600;color:var(--text1);margin-bottom:.25rem}
+    .how-desc{font-size:.68rem;color:var(--text3)}
+  </style>
+</head>
+<body>
+<div class="admin-wrap">
+  {% set active_page = 'upload' %}
+  {% include 'admin/_base.html' %}
+
+  <main class="admin-main">
+    <div class="breadcrumb fade-up">
+      <a href="{{ url_for('admin_panel') }}">Admin</a>
+      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-current">Upload Data</span>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.75rem;" class="fade-up">
+      <div>
+        <div style="font-family:'Familjen Grotesk',sans-serif;font-size:1.4rem;font-weight:700;">Upload Data</div>
+        <div style="font-size:.7rem;color:var(--text3);margin-top:.2rem;">Import students or grades via Excel — fully validated before import</div>
+      </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}<div class="alert alert-{{ cat }}">{{ msg }}</div>{% endfor %}
+    {% endwith %}
+
+    <div class="upload-grid fade-up fade-up-1">
+
+      <!-- Students -->
+      <div class="upload-card">
+        <h3>📋 Upload Students</h3>
+        <p>Import new student records. Each row = one student. Password is auto-set to roll number.</p>
+        <a href="{{ url_for('download_template', kind='students') }}" class="template-link">⬇ Download Template</a>
+        <div style="margin-top:1rem">
+          <div class="drop-zone" id="studentsDrop"
+               ondragover="handleDragOver(event,'studentsDrop')"
+               ondragleave="handleDragLeave('studentsDrop')"
+               ondrop="handleDrop(event,'students')">
+            <input type="file" accept=".xlsx,.xls" id="studentsFile" onchange="handleFileSelect(this,'students')">
+            <div class="drop-icon">📂</div>
+            <div class="drop-label">Drag & drop Excel file here</div>
+            <div class="drop-sub">or click to browse — .xlsx / .xls only</div>
+            <div class="drop-filename" id="studentsFilename"></div>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="previewUpload('students')" id="studentsPreviewBtn" disabled>
+              <span id="studentsSpinner" class="spinner"></span>Preview & Validate
+            </button>
+            <button class="btn btn-ghost" onclick="clearUpload('students')">Clear</button>
+          </div>
+        </div>
+        <div class="preview-section" id="studentsPreview">
+          <div class="preview-header">
+            <div class="preview-title">Validation Result</div>
+            <span class="preview-badge" id="studentsBadge"></span>
+          </div>
+          <div id="studentsErrors"></div>
+          <div class="preview-table-wrap"><table class="preview-table" id="studentsTable"></table></div>
+          <div class="confirm-bar" id="studentsConfirmBar" style="display:none">
+            <div class="confirm-msg" id="studentsConfirmMsg"></div>
+            <form method="POST" action="{{ url_for('upload_confirm') }}">
+              <input type="hidden" name="kind" value="students">
+              <input type="hidden" name="rows" id="studentsRows">
+              <button type="submit" class="btn btn-primary">✅ Confirm Import</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grades -->
+      <div class="upload-card">
+        <h3>📊 Upload Grades</h3>
+        <p>Import grade records. Each row = one subject grade. F grades auto-added to backlog history.</p>
+        <a href="{{ url_for('download_template', kind='grades') }}" class="template-link">⬇ Download Template</a>
+        <div style="margin-top:1rem">
+          <div class="drop-zone" id="gradesDrop"
+               ondragover="handleDragOver(event,'gradesDrop')"
+               ondragleave="handleDragLeave('gradesDrop')"
+               ondrop="handleDrop(event,'grades')">
+            <input type="file" accept=".xlsx,.xls" id="gradesFile" onchange="handleFileSelect(this,'grades')">
+            <div class="drop-icon">📂</div>
+            <div class="drop-label">Drag & drop Excel file here</div>
+            <div class="drop-sub">or click to browse — .xlsx / .xls only</div>
+            <div class="drop-filename" id="gradesFilename"></div>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="previewUpload('grades')" id="gradesPreviewBtn" disabled>
+              <span id="gradesSpinner" class="spinner"></span>Preview & Validate
+            </button>
+            <button class="btn btn-ghost" onclick="clearUpload('grades')">Clear</button>
+          </div>
+        </div>
+        <div class="preview-section" id="gradesPreview">
+          <div class="preview-header">
+            <div class="preview-title">Validation Result</div>
+            <span class="preview-badge" id="gradesBadge"></span>
+          </div>
+          <div id="gradesErrors"></div>
+          <div class="preview-table-wrap"><table class="preview-table" id="gradesTable"></table></div>
+          <div class="confirm-bar" id="gradesConfirmBar" style="display:none">
+            <div class="confirm-msg" id="gradesConfirmMsg"></div>
+            <form method="POST" action="{{ url_for('upload_confirm') }}">
+              <input type="hidden" name="kind" value="grades">
+              <input type="hidden" name="rows" id="gradesRows">
+              <button type="submit" class="btn btn-primary">✅ Confirm Import</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- How It Works -->
+    <div class="card fade-up fade-up-2">
+      <div class="card-head">How It Works</div>
+      <div class="how-grid">
+        <div class="how-item"><div class="how-icon">⬇</div><div class="how-title">1. Download Template</div><div class="how-desc">Get the correct Excel format with sample data and validation rules</div></div>
+        <div class="how-item"><div class="how-icon">✏️</div><div class="how-title">2. Fill Your Data</div><div class="how-desc">Add records following the format in the Notes & Rules sheet</div></div>
+        <div class="how-item"><div class="how-icon">📂</div><div class="how-title">3. Upload & Validate</div><div class="how-desc">Drag & drop or browse — all errors shown before anything is saved</div></div>
+        <div class="how-item"><div class="how-icon">✅</div><div class="how-title">4. Confirm Import</div><div class="how-desc">Review the preview table then click Confirm to insert into database</div></div>
+      </div>
+      <div style="padding:.75rem 1rem;font-size:.68rem;color:var(--text3);border-top:1px solid var(--border)">
+        ⚠ If <strong>any row</strong> has an error the entire file is rejected — fix all errors and re-upload. &nbsp;|&nbsp;
+        Student passwords are automatically set to their roll number. &nbsp;|&nbsp;
+        F grades are automatically recorded in backlog history.
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const fileStore = {students:null,grades:null};
+
+function handleDragOver(e,zoneId){e.preventDefault();document.getElementById(zoneId).classList.add('dragover')}
+function handleDragLeave(zoneId){document.getElementById(zoneId).classList.remove('dragover')}
+function handleDrop(e,kind){
+  e.preventDefault();
+  document.getElementById(kind+'Drop').classList.remove('dragover');
+  const f=e.dataTransfer.files[0]; if(f) setFile(f,kind);
+}
+function handleFileSelect(input,kind){if(input.files[0]) setFile(input.files[0],kind)}
+function setFile(file,kind){
+  if(!file.name.match(/\.(xlsx|xls)$/i)){alert('Only .xlsx and .xls files are allowed.');return}
+  fileStore[kind]=file;
+  document.getElementById(kind+'Filename').textContent='📄 '+file.name;
+  document.getElementById(kind+'Filename').style.display='block';
+  document.getElementById(kind+'PreviewBtn').disabled=false;
+  document.getElementById(kind+'Preview').classList.remove('visible');
+}
+function clearUpload(kind){
+  fileStore[kind]=null;
+  document.getElementById(kind+'File').value='';
+  document.getElementById(kind+'Filename').style.display='none';
+  document.getElementById(kind+'PreviewBtn').disabled=true;
+  document.getElementById(kind+'Preview').classList.remove('visible');
+}
+
+async function previewUpload(kind){
+  const file=fileStore[kind]; if(!file) return;
+  const btn=document.getElementById(kind+'PreviewBtn');
+  const spin=document.getElementById(kind+'Spinner');
+  btn.disabled=true; spin.style.display='inline-block';
+  const fd=new FormData(); fd.append('kind',kind); fd.append('file',file);
+  try{
+    const res=await fetch('/admin/upload/preview',{method:'POST',body:fd});
+    const data=await res.json();
+    renderPreview(kind,data);
+  }catch(e){alert('Upload failed: '+e.message);}
+  finally{btn.disabled=false;spin.style.display='none';}
+}
+
+function renderPreview(kind,data){
+  const sec=document.getElementById(kind+'Preview');
+  const badge=document.getElementById(kind+'Badge');
+  const errDiv=document.getElementById(kind+'Errors');
+  const table=document.getElementById(kind+'Table');
+  const bar=document.getElementById(kind+'ConfirmBar');
+  const msg=document.getElementById(kind+'ConfirmMsg');
+  const rowsInput=document.getElementById(kind+'Rows');
+
+  sec.classList.add('visible');
+  errDiv.innerHTML=''; table.innerHTML=''; bar.style.display='none';
+
+  if(!data.ok){
+    badge.textContent='❌ Validation Failed'; badge.className='preview-badge badge-error';
+    let html='<div class="error-list">';
+    if(data.error) html+=`<div class="error-item">${data.error}</div>`;
+    else if(data.errors) data.errors.forEach(e=>{
+      html+=`<div class="error-item"><strong>Row ${e.row}:</strong> ${e.errors.join(' &nbsp;|&nbsp; ')}</div>`;
+    });
+    html+='</div>'; errDiv.innerHTML=html; return;
+  }
+
+  badge.textContent=`✅ ${data.rows.length} rows valid`; badge.className='preview-badge badge-success';
+  const cols=Object.keys(data.rows[0]);
+  const gradeColors={O:'#a855f7',A:'#34d399',B:'#22d3ee',C:'#818cf8',D:'#fbbf24',F:'#fb7185'};
+  let html='<thead><tr>'+cols.map(c=>`<th>${c}</th>`).join('')+'</tr></thead><tbody>';
+  const shown=Math.min(data.rows.length,50);
+  data.rows.slice(0,shown).forEach(row=>{
+    html+='<tr>'+cols.map(c=>{
+      let v=row[c];
+      if(c==='grade') v=`<span style="color:${gradeColors[v]||'#fff'};font-weight:700">${v}</span>`;
+      return `<td>${v}</td>`;
+    }).join('')+'</tr>';
+  });
+  if(data.rows.length>50)
+    html+=`<tr><td colspan="${cols.length}" style="text-align:center;color:var(--text3);font-style:italic">… and ${data.rows.length-50} more rows</td></tr>`;
+  html+='</tbody>'; table.innerHTML=html;
+  msg.textContent=data.message;
+  rowsInput.value=JSON.stringify(data.rows);
+  bar.style.display='flex';
+}
+</script>
+</body>
+</html>

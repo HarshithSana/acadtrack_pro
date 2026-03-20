@@ -1074,6 +1074,388 @@ def student_profile(sid):
         admin_name       = session['admin_name']
     )
 
+import re
+import json
+import pandas as pd
+from io import BytesIO
+from datetime import date
+ 
+ALLOWED_EXTENSIONS  = {'xlsx', 'xls'}
+VALID_DEPARTMENTS   = {'CSE', 'IT', 'CSM', 'CSD'}
+VALID_GRADES        = {'O', 'A', 'B', 'C', 'D', 'F'}
+ROLL_PATTERN        = re.compile(r'^\d{2}7Z1A(05|12|66|67)(\d{2}|[A-Z]\d)$')
+GRADE_MARKS_RANGE   = {
+    'O':(90,100),'A':(80,89),'B':(70,79),
+    'C':(60,69), 'D':(50,59),'F':(0,49)
+}
+ 
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.',1)[1].lower() in ALLOWED_EXTENSIONS
+ 
+ 
+# ── Upload Page ───────────────────────────────────────────────
+@app.route('/admin/upload')
+@admin_required
+def upload_page():
+    return render_template('admin/upload.html', admin_name=session['admin_name'])
+ 
+ 
+# ── Download Sample Templates ─────────────────────────────────
+@app.route('/admin/upload/template/<kind>')
+@admin_required
+def download_template(kind):
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from openpyxl.utils import get_column_letter
+    from flask import send_file
+ 
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    hf = Font(bold=True, color='FFFFFF', size=11)
+    hb = PatternFill('solid', fgColor='1E3A5F')
+    sf = PatternFill('solid', fgColor='EAF4FF')
+    ca = Alignment(horizontal='center', vertical='center')
+ 
+    if kind == 'students':
+        ws.title = 'Students'
+        headers  = ['student_id','name','email','department','current_semester']
+        samples  = [
+            ['247Z1A0501','Arjun Reddy',  'arjun.reddy.a0501@college.edu',  'CSE',2],
+            ['247Z1A6601','Priya Sharma', 'priya.sharma.a6601@college.edu', 'CSM',2],
+            ['247Z1A6701','Ravi Kumar',   'ravi.kumar.a6701@college.edu',   'CSD',2],
+            ['247Z1A1201','Sneha Naidu',  'sneha.naidu.a1201@college.edu',  'IT', 2],
+        ]
+        widths   = [18,22,35,14,18]
+        notes_data = [
+            ['Field','Format / Rules','Example'],
+            ['student_id','YY7Z1ABBxx — roll number pattern','247Z1A0501'],
+            ['name','Full name, max 100 characters','Arjun Reddy'],
+            ['email','Unique valid email address','arjun@college.edu'],
+            ['department','CSE / IT / CSM / CSD only','CSE'],
+            ['current_semester','Integer from 1 to 8','2'],
+            ['','',''],
+            ['NOTE','Password is auto-set to the roll number',''],
+        ]
+        filename = 'students_template.xlsx'
+ 
+    elif kind == 'grades':
+        ws.title = 'Grades'
+        headers  = ['student_id','subject_id','semester','marks','grade']
+        samples  = [
+            ['247Z1A0501',41,3,78,'B'],
+            ['247Z1A0501',42,3,65,'C'],
+            ['247Z1A0501',45,3,85,'A'],
+            ['247Z1A6601',51,3,72,'B'],
+        ]
+        widths   = [18,12,12,10,10]
+        notes_data = [
+            ['Field','Format / Rules','Example'],
+            ['student_id','Must exist in students table','247Z1A0501'],
+            ['subject_id','Must exist in subjects table','41'],
+            ['semester','Integer from 1 to 8','3'],
+            ['marks','Integer from 0 to 100','78'],
+            ['grade','O / A / B / C / D / F only','B'],
+            ['','',''],
+            ['Grade','Marks Range',''],
+            ['O','90 – 100',''],
+            ['A','80 – 89',''],
+            ['B','70 – 79',''],
+            ['C','60 – 69',''],
+            ['D','50 – 59',''],
+            ['F','0  – 49',''],
+        ]
+        filename = 'grades_template.xlsx'
+    else:
+        return redirect(url_for('upload_page'))
+ 
+    # Style header row
+    for ci,(h,w) in enumerate(zip(headers,widths),1):
+        c = ws.cell(row=1, column=ci, value=h)
+        c.font=hf; c.fill=hb; c.alignment=ca
+        ws.column_dimensions[get_column_letter(ci)].width = w
+    ws.row_dimensions[1].height = 22
+ 
+    # Sample rows
+    for ri,row in enumerate(samples,2):
+        for ci,val in enumerate(row,1):
+            c = ws.cell(row=ri, column=ci, value=val)
+            c.fill=sf; c.alignment=Alignment(horizontal='center')
+ 
+    # Notes sheet
+    ns = wb.create_sheet('Notes & Rules')
+    for row in notes_data:
+        ns.append(row)
+    for col,w in zip(['A','B','C'],[22,38,20]):
+        ns.column_dimensions[col].width = w
+    # Style notes header
+    for ci in range(1,4):
+        c = ns.cell(row=1,column=ci)
+        c.font=hf; c.fill=hb; c.alignment=ca
+ 
+    buf = BytesIO()
+    wb.save(buf); buf.seek(0)
+    return send_file(buf, as_attachment=True, download_name=filename,
+                     mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+ 
+ 
+# ── Preview & Validate ────────────────────────────────────────
+@app.route('/admin/upload/preview', methods=['POST'])
+@admin_required
+def upload_preview():
+    kind = request.form.get('kind')
+    file = request.files.get('file')
+ 
+    if not file or file.filename == '':
+        return jsonify({'ok':False,'error':'No file selected.'})
+    if not allowed_file(file.filename):
+        return jsonify({'ok':False,'error':'Only .xlsx / .xls files are allowed.'})
+ 
+    try:
+        df = pd.read_excel(file, dtype=str)
+        df.columns = [c.strip().lower().replace(' ','_') for c in df.columns]
+        df = df.dropna(how='all').reset_index(drop=True)
+    except Exception as e:
+        return jsonify({'ok':False,'error':f'Could not read file: {str(e)}'})
+ 
+    if kind == 'students': return _validate_students(df)
+    if kind == 'grades':   return _validate_grades(df)
+    return jsonify({'ok':False,'error':'Unknown upload type.'})
+ 
+ 
+def _validate_students(df):
+    required = ['student_id','name','email','department','current_semester']
+    missing  = [c for c in required if c not in df.columns]
+    if missing:
+        return jsonify({'ok':False,'error':f'Missing columns: {", ".join(missing)}'})
+ 
+    existing_ids    = {r['student_id'] for r in
+                       (execute_query("SELECT student_id FROM students") or [])}
+    existing_emails = {r['email'] for r in
+                       (execute_query("SELECT email FROM students") or [])}
+    errors = []; preview = []
+ 
+    for i, row in df.iterrows():
+        rn    = i + 2
+        sid   = str(row.get('student_id','')).strip()
+        name  = str(row.get('name','')).strip()
+        email = str(row.get('email','')).strip()
+        dept  = str(row.get('department','')).strip().upper()
+        sem   = str(row.get('current_semester','')).strip()
+        errs  = []
+ 
+        if not ROLL_PATTERN.match(sid):
+            errs.append(f'Invalid roll number format: "{sid}"')
+        elif sid in existing_ids:
+            errs.append(f'Roll number already exists: {sid}')
+ 
+        if not name or len(name) > 100:
+            errs.append('Name is empty or exceeds 100 characters')
+ 
+        if '@' not in email:
+            errs.append(f'Invalid email: "{email}"')
+        elif email in existing_emails:
+            errs.append(f'Email already exists: {email}')
+ 
+        if dept not in VALID_DEPARTMENTS:
+            errs.append(f'Invalid department "{dept}" — must be CSE / IT / CSM / CSD')
+ 
+        if not sem.isdigit() or not (1 <= int(sem) <= 8):
+            errs.append(f'Invalid semester "{sem}" — must be 1 to 8')
+ 
+        if errs:
+            errors.append({'row':rn,'errors':errs})
+        else:
+            preview.append({'student_id':sid,'name':name,'email':email,
+                            'department':dept,'current_semester':int(sem)})
+ 
+    if errors:
+        return jsonify({'ok':False,'errors':errors,
+                        'message':f'{len(errors)} row(s) have errors. Fix all errors and re-upload.'})
+    return jsonify({'ok':True,'kind':'students','rows':preview,
+                    'message':f'{len(preview)} student(s) validated and ready to import.'})
+ 
+ 
+def _validate_grades(df):
+    required = ['student_id','subject_id','semester','marks','grade']
+    missing  = [c for c in required if c not in df.columns]
+    if missing:
+        return jsonify({'ok':False,'error':f'Missing columns: {", ".join(missing)}'})
+ 
+    valid_students = {r['student_id'] for r in
+                      (execute_query("SELECT student_id FROM students") or [])}
+    valid_subjects = {r['subject_id'] for r in
+                      (execute_query("SELECT subject_id FROM subjects") or [])}
+    existing_grades= {(r['student_id'],r['subject_id'],r['semester_id'])
+                      for r in (execute_query(
+                        "SELECT student_id, subject_id, semester_id FROM grades") or [])}
+ 
+    errors = []; preview = []
+ 
+    for i, row in df.iterrows():
+        rn      = i + 2
+        sid     = str(row.get('student_id','')).strip()
+        subj    = str(row.get('subject_id','')).strip()
+        sem     = str(row.get('semester','')).strip()
+        marks_s = str(row.get('marks','')).strip()
+        grade   = str(row.get('grade','')).strip().upper()
+        errs    = []
+ 
+        if sid not in valid_students:
+            errs.append(f'Student not found in DB: "{sid}"')
+ 
+        subj_ok = subj.isdigit() and int(subj) in valid_subjects
+        if not subj_ok:
+            errs.append(f'Invalid subject_id: "{subj}"')
+ 
+        sem_ok = sem.isdigit() and 1 <= int(sem) <= 8
+        if not sem_ok:
+            errs.append(f'Invalid semester: "{sem}" — must be 1 to 8')
+ 
+        marks_ok = marks_s.isdigit() and 0 <= int(marks_s) <= 100
+        if not marks_ok:
+            errs.append(f'Invalid marks: "{marks_s}" — must be 0 to 100')
+ 
+        if grade not in VALID_GRADES:
+            errs.append(f'Invalid grade: "{grade}" — must be O/A/B/C/D/F')
+ 
+        # Marks-grade consistency
+        if not errs and grade in GRADE_MARKS_RANGE:
+            lo,hi = GRADE_MARKS_RANGE[grade]
+            if not (lo <= int(marks_s) <= hi):
+                errs.append(f'Marks {marks_s} inconsistent with grade {grade} '
+                             f'(expected {lo}–{hi})')
+ 
+        # Duplicate check
+        if not errs:
+            key = (sid, int(subj), int(sem))
+            if key in existing_grades:
+                errs.append(f'Grade already exists for student {sid}, '
+                             f'subject {subj}, semester {sem}')
+ 
+        if errs:
+            errors.append({'row':rn,'errors':errs})
+        else:
+            preview.append({'student_id':sid,'subject_id':int(subj),
+                            'semester':int(sem),'marks':int(marks_s),'grade':grade})
+ 
+    if errors:
+        return jsonify({'ok':False,'errors':errors,
+                        'message':f'{len(errors)} row(s) have errors. Fix all errors and re-upload.'})
+    return jsonify({'ok':True,'kind':'grades','rows':preview,
+                    'message':f'{len(preview)} grade record(s) validated and ready to import.'})
+ 
+ 
+# ── Confirm & Insert ──────────────────────────────────────────
+@app.route('/admin/upload/confirm', methods=['POST'])
+@admin_required
+def upload_confirm():
+    kind = request.form.get('kind')
+    rows = json.loads(request.form.get('rows','[]'))
+ 
+    if not rows:
+        flash('No data to import.','warning')
+        return redirect(url_for('upload_page'))
+ 
+    if kind == 'students':
+        inserted = 0
+        for r in rows:
+            try:
+                execute_query("""
+                    INSERT INTO students
+                    (student_id,name,email,password,department,
+                     current_semester,risk_flag,trend,credits_earned,total_credits)
+                    VALUES (%s,%s,%s,%s,%s,%s,'LOW','Stable',0,0)
+                """, (r['student_id'],r['name'],r['email'],
+                      r['student_id'],  # password = roll number
+                      r['department'],r['current_semester']), fetch=False)
+ 
+                # Create semester status rows
+                for sem in range(1,9):
+                    cs = r['current_semester']
+                    status = 'Ongoing' if sem==cs else \
+                             'Completed' if sem<cs else 'Upcoming'
+                    execute_query("""
+                        INSERT IGNORE INTO student_semester_status
+                        (student_id,semester_id,status) VALUES (%s,%s,%s)
+                    """, (r['student_id'],sem,status), fetch=False)
+ 
+                # Set total_credits based on branch curriculum
+                execute_query("""
+                    UPDATE students st
+                    SET total_credits = (
+                        SELECT COALESCE(SUM(s.credits),0)
+                        FROM branch_subjects bs
+                        JOIN subjects s ON bs.subject_id=s.subject_id
+                        WHERE bs.department=st.department
+                        AND bs.semester <= st.current_semester
+                        AND s.credits > 0
+                    )
+                    WHERE student_id=%s
+                """, (r['student_id'],), fetch=False)
+ 
+                inserted += 1
+            except Exception as e:
+                flash(f"Error inserting {r['student_id']}: {str(e)}",'error')
+                return redirect(url_for('upload_page'))
+ 
+        flash(f'✅ Successfully imported {inserted} student(s). '
+              f'Password set to roll number for all.','success')
+ 
+    elif kind == 'grades':
+        inserted = 0
+        today = date.today().isoformat()
+        for r in rows:
+            try:
+                execute_query("""
+                    INSERT INTO grades
+                    (student_id,subject_id,semester_id,marks,grade,recorded_date)
+                    VALUES (%s,%s,%s,%s,%s,%s)
+                """, (r['student_id'],r['subject_id'],r['semester'],
+                      r['marks'],r['grade'],today), fetch=False)
+ 
+                # F grade → backlog_attempts
+                if r['grade'] == 'F':
+                    existing = execute_query("""
+                        SELECT MAX(attempt_number) AS max_att
+                        FROM backlog_attempts
+                        WHERE student_id=%s AND subject_id=%s
+                    """, (r['student_id'],r['subject_id']))
+                    att = (existing[0]['max_att'] or 0) + 1
+                    execute_query("""
+                        INSERT INTO backlog_attempts
+                        (student_id,subject_id,attempt_number,
+                         attempt_semester,attempt_date,marks,grade,status)
+                        VALUES (%s,%s,%s,%s,%s,%s,'F','Failed')
+                    """, (r['student_id'],r['subject_id'],att,
+                          r['semester'],today,r['marks']), fetch=False)
+                else:
+                    # Clear any existing failed backlog for this subject
+                    execute_query("""
+                        UPDATE backlog_attempts
+                        SET status='Cleared', cleared_semester=%s
+                        WHERE student_id=%s AND subject_id=%s AND status='Failed'
+                    """, (r['semester'],r['student_id'],r['subject_id']), fetch=False)
+ 
+                # Update credits_earned
+                execute_query("""
+                    UPDATE students st
+                    SET credits_earned=(
+                        SELECT COALESCE(SUM(sub.credits),0)
+                        FROM grades g
+                        JOIN subjects sub ON g.subject_id=sub.subject_id
+                        WHERE g.student_id=st.student_id
+                        AND g.grade!='F' AND sub.credits>0
+                    ) WHERE student_id=%s
+                """, (r['student_id'],), fetch=False)
+ 
+                inserted += 1
+            except Exception as e:
+                flash(f"Error inserting grade for {r['student_id']}: {str(e)}",'error')
+                return redirect(url_for('upload_page'))
+ 
+        flash(f'✅ Successfully imported {inserted} grade record(s).','success')
+ 
+    return redirect(url_for('upload_page'))
 
 if __name__ == '__main__':
     app.run(debug=True)
