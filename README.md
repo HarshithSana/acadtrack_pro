@@ -384,7 +384,7 @@ pip install -r requirements.txt
 `requirements.txt`:
 ```
 flask
-pymysql
+mysql-connector-python
 scikit-learn
 joblib
 numpy
@@ -399,12 +399,12 @@ openpyxl
 Edit `db.py`:
 
 ```python
-DB_CONFIG = {
-    'host':     'localhost',
-    'user':     'root',
-    'password': 'your_password',
-    'database': 'acadtrack_pro'
-}
+return mysql.connector.connect(
+    host     = "localhost",
+    user     = "root",
+    password = "your_password",   # ← change this
+    database = "acadtrack_pro"
+)
 ```
 
 ---
